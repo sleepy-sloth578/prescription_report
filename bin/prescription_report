@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+unless ARGV.any?
+  warn "Please pass in a file name or its output."
+  exit
+end
