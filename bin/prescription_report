@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 
+require_relative "../lib/prescription_report"
+
 unless ARGV.any?
   warn "Please pass in a file name or its output."
-  exit
+  exit 1
 end
