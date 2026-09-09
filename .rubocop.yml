@@ -15,6 +15,10 @@ Style/StringLiterals:
 Style/Documentation:
   Enabled: false
 
+# `format("%s$%d", ...)`-style money rendering reads fine unannotated.
+Style/FormatStringToken:
+  EnforcedStyle: unannotated
+
 # The executable is a thin wrapper; a shebang comment is expected there.
 Style/FrozenStringLiteralComment:
   Exclude:
