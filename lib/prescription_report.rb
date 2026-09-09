@@ -10,3 +10,4 @@ module PrescriptionReport
 end
 
 require_relative "prescription_report/event_type"
+require_relative "prescription_report/event"
