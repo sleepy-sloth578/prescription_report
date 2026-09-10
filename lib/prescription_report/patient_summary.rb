@@ -3,7 +3,7 @@
 module PrescriptionReport
   PatientSummary = Data.define(:patient, :fills, :income_cents) do
     def formatted_income
-      PrescriptionReport.format_money(income_cents)
+      Money.format(income_cents)
     end
 
     def to_s
