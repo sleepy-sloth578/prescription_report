@@ -1,7 +1,34 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
+require "optparse"
 require_relative "../lib/prescription_report"
 
+show_rejections = false
+
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: prescription_report [options] [FILE]\n\n" \
+                "Reads prescription events from FILE or stdin and prints a\n" \
+                "per-patient report to stdout.\n\n"
+  opts.on("--show-rejections", "Print discarded lines to stderr") do
+    show_rejections = true
+  end
+  opts.on("-h", "--help", "Show this message") do
+    warn opts
+    exit 0
+  end
+end
+parser.parse!
+
 ledger = PrescriptionReport::Ledger.new
-ledger.ingest(ARGF)
-ledger.summaries.each { |s| puts s }
+
+begin
+  ledger.ingest(ARGF)
+rescue Errno::ENOENT
+  warn "error: no such file: #{ARGV.first}"
+  exit 1
+end
+
+
+ledger.rejections.each { |rejection| warn "discarded #{rejection}" } if show_rejections
+ledger.summaries.each  { |summary|   puts summary }
