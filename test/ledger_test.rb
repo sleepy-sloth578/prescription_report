@@ -8,7 +8,7 @@ describe PrescriptionReport::Ledger do
   end
 
   def net_cents(input)
-    ledger_for(input).net_cents
+    ledger_for(input).summaries.sum(&:income_cents)
   end
 
   def test_a_fill_earns_five_dollars
@@ -29,12 +29,10 @@ describe PrescriptionReport::Ledger do
     assert_equal(-500 * 100, net_cents(lines.join("\n")))
   end
 
-  # --- lifecycle rules ---
-
   def test_fill_before_create_is_discarded
     ledger = ledger_for("Mark B filled\n")
 
-    assert_equal 0, ledger.net_cents
+    assert_empty ledger.summaries
     assert_equal 1, ledger.rejections.size
     assert_match(/never created/, ledger.rejections.first.detail)
   end
@@ -42,43 +40,44 @@ describe PrescriptionReport::Ledger do
   def test_return_before_create_is_discarded
     ledger = ledger_for("Mark B returned\n")
 
-    assert_equal 0, ledger.net_cents
+    assert_empty ledger.summaries
     assert_equal 1, ledger.rejections.size
   end
 
   def test_return_without_an_outstanding_fill_is_discarded
     ledger = ledger_for("Mark B created\nMark B returned\n")
 
-    assert_equal 0, ledger.net_cents
+    assert_equal 0, ledger.summaries.first.income_cents
     assert_match(/no outstanding fill/, ledger.rejections.first.detail)
   end
 
   def test_a_prescription_can_be_filled_repeatedly
     ledger = ledger_for("Mark B created\nMark B filled\nMark B filled\nMark B filled\n")
 
-    assert_equal 1500, ledger.net_cents
+    assert_equal 1500, ledger.summaries.first.income_cents
     assert_equal 3, ledger.summaries.first.fills
   end
 
   def test_a_returned_prescription_can_be_filled_again
     ledger = ledger_for("Mark B created\nMark B filled\nMark B returned\nMark B filled\n")
 
-    assert_equal 400, ledger.net_cents
+    assert_equal 400, ledger.summaries.first.income_cents
     assert_equal 1, ledger.summaries.first.fills
   end
 
   def test_duplicate_create_is_discarded_and_does_not_reset_state
     ledger = ledger_for("Mark B created\nMark B filled\nMark B created\n")
 
-    assert_equal 500, ledger.net_cents
-    assert_equal 1, ledger.prescription_count
+    assert_equal 500, ledger.summaries.first.income_cents
+    assert_equal 1, ledger.summaries.first.fills
+    assert_equal 1, ledger.rejections.size
     assert_match(/already exists/, ledger.rejections.first.detail)
   end
 
   def test_more_returns_than_fills_cannot_drive_the_count_negative
     ledger = ledger_for("Mark B created\nMark B filled\nMark B returned\nMark B returned\n")
 
-    assert_equal(-100, ledger.net_cents)
+    assert_equal(-100, ledger.summaries.first.income_cents)
     assert_equal 0, ledger.summaries.first.fills
     assert_equal 1, ledger.rejections.size
   end
@@ -92,8 +91,8 @@ describe PrescriptionReport::Ledger do
       Mark B returned
     EVENTS
 
-    assert_equal 400, ledger.net_cents
-    assert_equal 2, ledger.prescription_count
+    assert_equal 400, ledger.summaries.first.income_cents
+    assert_empty ledger.rejections
     assert_equal 1, ledger.summaries.size
     assert_equal 1, ledger.summaries.first.fills
   end
@@ -143,10 +142,13 @@ describe PrescriptionReport::Ledger do
     ], ledger.summaries.map(&:to_s)
   end
 
-  def test_prescription_count_reflects_only_created_prescriptions
-    ledger = ledger_for("Mark B created\nMark C created\nMark D filled\n")
+  def test_a_fill_for_an_uncreated_drug_is_rejected_while_real_prescriptions_still_work
+    ledger = ledger_for("Mark B created\nMark C created\nMark B filled\nMark C filled\nMark D filled\n")
 
-    assert_equal 2, ledger.prescription_count
+    assert_equal 1000, ledger.summaries.first.income_cents
+    assert_equal 2, ledger.summaries.first.fills
+    assert_equal 1, ledger.rejections.size
+    assert_match(/never created/, ledger.rejections.first.detail)
   end
 
   def test_rejections_carry_the_source_line

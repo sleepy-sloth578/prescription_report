@@ -23,14 +23,6 @@ module PrescriptionReport
                .sort_by { |summary| [-summary.fills, summary.patient] }
     end
 
-    def net_cents
-      @prescriptions.each_value.sum(&:income_cents)
-    end
-
-    def prescription_count
-      @prescriptions.size
-    end
-
     private
 
     def apply(event)

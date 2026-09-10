@@ -2,7 +2,6 @@
 
 require_relative "../lib/prescription_report"
 
-unless ARGV.any?
-  warn "Please pass in a file name or its output."
-  exit 1
-end
+ledger = PrescriptionReport::Ledger.new
+ledger.ingest(ARGF)
+ledger.summaries.each { |s| puts s }
