@@ -57,6 +57,18 @@ bundle exec rubocop
 CI runs the same checks on every push to `main` and every pull request
 (`.github/workflows/ci.yml`).
 
+## Testing
+
+Minitest, spec-style, one test file per class, each exercised through its public
+interface only. Value objects (`Event`, `Rejection`, `PatientSummary`,
+`Prescription`, `Money`) cover construction, immutability, and their derived
+values. `Reader` leans on parsing edge cases — field counts, whitespace and tabs,
+blank lines, unknown types, `String` vs `StringIO` — and `Ledger` is driven end
+to end, `ingest` a string then read `summaries` / `rejections`, down to a test
+that reproduces the exact report for the sample input. `EventType` is pinned down
+on its own as the parse chokepoint everything downstream trusts. The CLI wrapper
+(`bin/prescription_report`) has no automated test and is verified by hand.
+
 
 
 ## Architecture
