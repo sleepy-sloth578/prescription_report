@@ -20,6 +20,12 @@ parser = OptionParser.new do |opts|
 end
 parser.parse!
 
+if ARGV.empty? && $stdin.tty?
+  warn "error: no input -- pass a FILE or pipe prescription events on stdin"
+  warn parser
+  exit 1
+end
+
 ledger = PrescriptionReport::Ledger.new
 
 begin
@@ -28,7 +34,6 @@ rescue Errno::ENOENT
   warn "error: no such file: #{ARGV.first}"
   exit 1
 end
-
 
 ledger.rejections.each { |rejection| warn "discarded #{rejection}" } if show_rejections
 ledger.summaries.each  { |summary|   puts summary }
